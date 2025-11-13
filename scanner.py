@@ -1,33 +1,34 @@
 """
-MediaVault Scanner - File Scanner Module
+MediaVault Scanner - File Scanner Module (Enhanced VL-OCR Version)
 Recursively scans directories for media files and coordinates metadata extraction.
 """
 
 import os
 from pathlib import Path
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Dict, Any
 from database import MediaDatabase
 from metadata_extractor import MetadataExtractor
 
 
 class MediaScanner:
     """Scans directories for media files and extracts metadata."""
-    
+
     # Supported file extensions
     SUPPORTED_EXTENSIONS = {
         '.jpg', '.jpeg', '.png', '.heic',  # Images
         '.mp4', '.mov', '.avi'              # Videos
     }
-    
-    def __init__(self, db_path: str = "metadata.db"):
+
+    def __init__(self, db_path: str = "metadata.db", gguf_ocr_config: Dict[str, Any] = None):
         """
         Initialize the media scanner.
-        
+
         Args:
             db_path: Path to the SQLite database file
+            gguf_ocr_config: Configuration dictionary for GGUF OCR engine
         """
         self.database = MediaDatabase(db_path)
-        self.extractor = MetadataExtractor()
+        self.extractor = MetadataExtractor(gguf_ocr_config=gguf_ocr_config)
         self.should_stop = False
     
     def scan_directory(

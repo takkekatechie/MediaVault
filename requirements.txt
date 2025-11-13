@@ -1,4 +1,4 @@
-# MediaVault Scanner - Python Dependencies
+# MediaVault Scanner - Python Dependencies (GGUF/llama-cpp-python Version)
 # Install with: pip install -r requirements.txt
 
 # GUI Framework
@@ -8,10 +8,32 @@ customtkinter>=5.2.0
 Pillow>=10.0.0
 exifread>=3.0.0
 
-# OCR
+# OCR - Tesseract (Fallback)
 pytesseract>=0.3.10
 
-# Computer Vision (Face Detection)
+# VL-OCR - Deepseek GGUF Model via llama-cpp-python (Primary)
+# CRITICAL: llama-cpp-python must be compiled with GPU support for acceleration
+#
+# INSTALLATION INSTRUCTIONS:
+#
+# 1. CPU-ONLY (No GPU acceleration, slowest):
+#    pip install llama-cpp-python
+#
+# 2. NVIDIA CUDA (Recommended for NVIDIA GPUs):
+#    FORCE_CMAKE=1 CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python --no-cache-dir
+#    (Windows PowerShell: $env:FORCE_CMAKE=1; $env:CMAKE_ARGS="-DLLAMA_CUBLAS=on"; pip install llama-cpp-python --no-cache-dir)
+#
+# 3. AMD ROCm/HIP (For AMD GPUs - REQUIRES ROCm stack installed):
+#    FORCE_CMAKE=1 CMAKE_ARGS="-DLLAMA_HIP=on" pip install llama-cpp-python --no-cache-dir
+#    (Windows PowerShell: $env:FORCE_CMAKE=1; $env:CMAKE_ARGS="-DLLAMA_HIP=on"; pip install llama-cpp-python --no-cache-dir)
+#    NOTE: AMD users must install ROCm software stack first: https://rocm.docs.amd.com/
+#
+# 4. Pre-built wheels (if available):
+#    pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
+#
+llama-cpp-python>=0.2.0
+
+# Computer Vision (Face Detection & Object Detection)
 opencv-python>=4.8.0
 numpy>=1.24.0
 

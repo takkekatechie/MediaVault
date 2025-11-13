@@ -1,5 +1,5 @@
 """
-MediaVault Scanner - Main Application
+MediaVault Scanner - Main Application (Enhanced VL-OCR Version)
 A professional-grade desktop application for scanning and cataloging media metadata.
 """
 
@@ -14,6 +14,7 @@ from PIL import Image
 from config import Config
 from scanner import MediaScanner
 from database import MediaDatabase
+from model_setup_dialog import ModelSetupDialog
 
 
 class MediaVaultApp(ctk.CTk):
@@ -33,9 +34,10 @@ class MediaVaultApp(ctk.CTk):
         # Set appearance
         ctk.set_appearance_mode(Config.APPEARANCE_MODE)
         ctk.set_default_color_theme(Config.COLOR_THEME)
-        
-        # Initialize scanner
-        self.scanner = MediaScanner()
+
+        # Initialize scanner with GGUF OCR configuration
+        gguf_ocr_config = Config.get_gguf_ocr_config()
+        self.scanner = MediaScanner(gguf_ocr_config=gguf_ocr_config)
         self.scanning = False
         self.selected_directory = None
 
@@ -47,26 +49,33 @@ class MediaVaultApp(ctk.CTk):
         # Filtered data cache
         self.current_filtered_data = []
 
-        # Check for Tesseract
-        self._check_tesseract()
+        # Show model setup dialog on first run or if needed
+        self._show_model_setup()
 
         # Build UI
         self._build_ui()
 
         # Load existing data
         self._load_data()
-    
-    def _check_tesseract(self):
-        """Check if Tesseract is installed and configured."""
-        if not Config.TESSERACT_PATH:
-            if not Config.auto_detect_tesseract():
-                # Show warning dialog
-                self.after(100, self._show_tesseract_warning)
-    
-    def _show_tesseract_warning(self):
-        """Show Tesseract installation warning dialog."""
-        dialog = TesseractSetupDialog(self)
-        dialog.grab_set()
+
+    def _show_model_setup(self):
+        """Show model setup dialog for VL-OCR configuration."""
+        # Check if this is first run or if setup is needed
+        first_run = not os.path.exists(Config.CONFIG_FILE)
+
+        # Always show on first run, or if Tesseract is not configured
+        if first_run or not Config.TESSERACT_PATH:
+            # Show setup dialog after window is ready
+            self.after(500, self._display_model_setup_dialog)
+
+    def _display_model_setup_dialog(self):
+        """Display the model setup dialog."""
+        dialog = ModelSetupDialog(self, Config)
+        self.wait_window(dialog)
+
+        # If setup was completed, save config
+        if dialog.setup_complete:
+            Config.save_config()
     
     def _build_ui(self):
         """Build the main user interface."""

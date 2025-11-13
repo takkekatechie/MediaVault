@@ -1,5 +1,5 @@
 """
-MediaVault Scanner - Metadata Extraction Module
+MediaVault Scanner - Metadata Extraction Module (GGUF OCR Version)
 Extracts metadata from images and videos using various techniques.
 """
 
@@ -13,12 +13,12 @@ from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 import exifread
 
-# OCR
-import pytesseract
-
 # Computer Vision
 import cv2
 import numpy as np
+
+# GGUF OCR (Deepseek GGUF with Tesseract fallback)
+from gguf_ocr import GGUF_OCR
 
 
 class MetadataExtractor:
@@ -49,14 +49,22 @@ class MetadataExtractor:
     THUMBNAIL_SIZE = (64, 64)
     THUMBNAIL_DIR = "thumbnails"
 
-    def __init__(self):
-        """Initialize the metadata extractor with face detection cascade."""
+    def __init__(self, gguf_ocr_config: dict = None):
+        """
+        Initialize the metadata extractor with face detection cascade and GGUF OCR.
+
+        Args:
+            gguf_ocr_config: Configuration dictionary for GGUF OCR engine
+        """
         # Load Haar Cascade for face detection
         cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
         self.face_cascade = cv2.CascadeClassifier(cascade_path)
 
         # Create thumbnails directory if it doesn't exist
         os.makedirs(self.THUMBNAIL_DIR, exist_ok=True)
+
+        # Initialize GGUF OCR engine (Deepseek GGUF with Tesseract fallback)
+        self.gguf_ocr = GGUF_OCR(config=gguf_ocr_config)
     
     def extract_metadata(self, filepath: str) -> Dict[str, Any]:
         """
@@ -271,57 +279,179 @@ class MetadataExtractor:
             return None
 
     def _extract_ocr_text(self, filepath: str) -> Tuple[str, str]:
-        """Extract text from an image using OCR."""
+        """
+        Extract text from an image using VL-OCR (Deepseek with Tesseract fallback).
+
+        Args:
+            filepath: Path to image file
+
+        Returns:
+            Tuple of (text_summary, keywords)
+        """
         try:
-            img = Image.open(filepath)
-            text = pytesseract.image_to_string(img)
-            return self._process_ocr_text(text)
-        except Exception:
+            # Use GGUF OCR engine (will try Deepseek GGUF first, then Tesseract)
+            return self.gguf_ocr.extract_text(filepath, max_length=100)
+        except Exception as e:
+            print(f"OCR extraction failed for {filepath}: {e}")
             return '', ''
 
     def _extract_ocr_from_frame(self, frame: np.ndarray) -> Tuple[str, str]:
-        """Extract text from a video frame using OCR."""
+        """
+        Extract text from a video frame using VL-OCR (Deepseek with Tesseract fallback).
+
+        Args:
+            frame: Video frame as numpy array
+
+        Returns:
+            Tuple of (text_summary, keywords)
+        """
         try:
             # Convert BGR to RGB
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pil_img = Image.fromarray(rgb_frame)
-            text = pytesseract.image_to_string(pil_img)
-            return self._process_ocr_text(text)
-        except Exception:
+
+            # Use GGUF OCR engine (will try Deepseek GGUF first, then Tesseract)
+            return self.gguf_ocr.extract_text(rgb_frame, max_length=100)
+        except Exception as e:
+            print(f"OCR extraction failed for video frame: {e}")
             return '', ''
 
-    def _process_ocr_text(self, text: str) -> Tuple[str, str]:
-        """Process OCR text to extract summary and keywords."""
-        if not text:
-            return '', ''
+    # Note: _process_ocr_text method removed - now handled by GGUF_OCR class
 
-        # Clean and tokenize
-        words = text.lower().split()
+    def _detect_objects_image(self, filepath: str) -> str:
+        """
+        Detect objects/scenes in an image using local heuristic methods.
 
-        # Filter stopwords and short words
-        meaningful_words = [
-            word.strip('.,!?;:()[]{}"\'-')
-            for word in words
-            if len(word) > 2 and word.lower() not in self.STOPWORDS
-        ]
+        NOTE: This is a simplified color/pattern-based heuristic, NOT ML-based detection.
+        It identifies common scenes (sky, grass, water, etc.) based on dominant colors.
+        """
+        try:
+            # Read image with OpenCV
+            img = cv2.imread(filepath)
+            if img is None:
+                return ''
 
-        # Get unique words
-        unique_words = []
-        seen = set()
-        for word in meaningful_words:
-            if word not in seen and word.isalpha():
-                unique_words.append(word)
-                seen.add(word)
-                if len(unique_words) >= 5:
-                    break
+            # Resize for faster processing
+            height, width = img.shape[:2]
+            max_dim = 400
+            if max(height, width) > max_dim:
+                scale = max_dim / max(height, width)
+                img = cv2.resize(img, (int(width * scale), int(height * scale)))
 
-        # Create summary (first 100 chars of original text)
-        summary = text.strip()[:100]
+            # Convert to HSV for color-based detection
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-        # Create keywords (top 3-5 unique words)
-        keywords = ', '.join(unique_words[:5])
+            detected_objects = []
+            total_pixels = img.shape[0] * img.shape[1]
 
-        return summary, keywords
+            # Check for each color range
+            for obj_name, color_range in self.COLOR_RANGES.items():
+                lower = np.array(color_range['lower'])
+                upper = np.array(color_range['upper'])
+
+                # Create mask for this color range
+                mask = cv2.inRange(hsv, lower, upper)
+
+                # Calculate percentage of image with this color
+                color_pixels = cv2.countNonZero(mask)
+                percentage = (color_pixels / total_pixels) * 100
+
+                # If significant presence (>15%), add to detected objects
+                if percentage > 15:
+                    detected_objects.append(obj_name)
+
+            # Detect edges to identify structured objects vs natural scenes
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(gray, 50, 150)
+            edge_pixels = cv2.countNonZero(edges)
+            edge_percentage = (edge_pixels / total_pixels) * 100
+
+            # High edge density suggests buildings, vehicles, or structured objects
+            if edge_percentage > 10:
+                detected_objects.append('building/structure')
+
+            # Detect circles (could be faces, balls, wheels, etc.)
+            circles = cv2.HoughCircles(
+                gray, cv2.HOUGH_GRADIENT, dp=1, minDist=50,
+                param1=50, param2=30, minRadius=10, maxRadius=100
+            )
+            if circles is not None and len(circles[0]) > 2:
+                detected_objects.append('circular-objects')
+
+            return ', '.join(detected_objects) if detected_objects else 'general-scene'
+
+        except Exception as e:
+            print(f"Error detecting objects in image: {e}")
+            return ''
+
+    def _detect_objects_frame(self, frame: np.ndarray) -> str:
+        """
+        Detect objects/scenes in a video frame using local heuristic methods.
+
+        NOTE: This is a simplified color/pattern-based heuristic, NOT ML-based detection.
+        """
+        try:
+            # Resize for faster processing
+            height, width = frame.shape[:2]
+            max_dim = 400
+            if max(height, width) > max_dim:
+                scale = max_dim / max(height, width)
+                frame = cv2.resize(frame, (int(width * scale), int(height * scale)))
+
+            # Convert to HSV for color-based detection
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+            detected_objects = []
+            total_pixels = frame.shape[0] * frame.shape[1]
+
+            # Check for each color range
+            for obj_name, color_range in self.COLOR_RANGES.items():
+                lower = np.array(color_range['lower'])
+                upper = np.array(color_range['upper'])
+
+                # Create mask for this color range
+                mask = cv2.inRange(hsv, lower, upper)
+
+                # Calculate percentage of frame with this color
+                color_pixels = cv2.countNonZero(mask)
+                percentage = (color_pixels / total_pixels) * 100
+
+                # If significant presence (>15%), add to detected objects
+                if percentage > 15:
+                    detected_objects.append(obj_name)
+
+            # Detect edges
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(gray, 50, 150)
+            edge_pixels = cv2.countNonZero(edges)
+            edge_percentage = (edge_pixels / total_pixels) * 100
+
+            if edge_percentage > 10:
+                detected_objects.append('building/structure')
+
+            return ', '.join(detected_objects) if detected_objects else 'general-scene'
+
+        except Exception as e:
+            print(f"Error detecting objects in frame: {e}")
+            return ''
+
+    def _combine_keywords(self, object_tags: str, ocr_keywords: str) -> str:
+        """
+        Combine object detection tags and OCR keywords into a single comma-separated list.
+
+        This ensures the object_keywords field contains BOTH identified objects/scenes
+        AND meaningful text extracted via OCR, as per requirements.
+        """
+        combined = []
+
+        # Add object tags
+        if object_tags:
+            combined.append(object_tags)
+
+        # Add OCR keywords
+        if ocr_keywords:
+            combined.append(ocr_keywords)
+
+        return ', '.join(combined) if combined else ''
 
     def _analyze_emotion_sentiment(self, filepath: str, metadata: Dict[str, Any]) -> str:
         """
