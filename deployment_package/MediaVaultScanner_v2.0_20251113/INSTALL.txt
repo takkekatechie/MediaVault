@@ -1,0 +1,86 @@
+MediaVault Scanner v2.0 - Installation Instructions
+======================================================
+
+Thank you for downloading MediaVault Scanner!
+
+QUICK START (3 Steps):
+======================
+
+Step 1: Install Tesseract OCR (REQUIRED)
+-----------------------------------------
+1. Download Tesseract from: https://github.com/UB-Mannheim/tesseract/wiki
+2. Run the installer: tesseract-ocr-w64-setup-*.exe
+3. Add to Windows PATH (recommended) or configure path in the app
+
+Step 2: (OPTIONAL) Download GGUF Model for High-Performance OCR
+----------------------------------------------------------------
+1. Download the Deepseek GGUF model file (~2-7GB)
+2. Place it in the 'models' folder as: deepseek-ocr.gguf
+3. Or use the download script: scripts\download_model.ps1
+
+Step 3: Run the Application
+----------------------------
+1. Double-click MediaVaultScanner.exe
+2. Complete the setup wizard on first run
+3. Select a folder to scan and click "Start Scan"
+
+ADVANCED: GPU Acceleration (Optional)
+======================================
+
+For high-performance OCR with GPU acceleration, you need llama-cpp-python
+with GPU support. This is OPTIONAL - the app works without it.
+
+For NVIDIA GPUs (CUDA):
+-----------------------
+1. Install CUDA Toolkit 11.8+ from: https://developer.nvidia.com/cuda-downloads
+2. Open PowerShell and run:
+   $env:FORCE_CMAKE=1
+   $env:CMAKE_ARGS="-DLLAMA_CUBLAS=on"
+   pip install llama-cpp-python --no-cache-dir
+
+For AMD GPUs (ROCm/HIP):
+------------------------
+1. Install AMD ROCm from: https://rocm.docs.amd.com/
+2. Open PowerShell and run:
+   $env:FORCE_CMAKE=1
+   $env:CMAKE_ARGS="-DLLAMA_HIP=on"
+   pip install llama-cpp-python --no-cache-dir
+
+SYSTEM REQUIREMENTS:
+====================
+
+Minimum (Tesseract Only):
+- Windows 10/11 (64-bit)
+- 4GB RAM
+- 500MB disk space
+- Tesseract OCR installed
+
+Recommended (GGUF OCR):
+- Windows 10/11 (64-bit)
+- 8GB RAM (16GB recommended)
+- 10GB disk space
+- NVIDIA GPU with 4GB+ VRAM OR AMD GPU with ROCm support
+- CUDA 11.8+ or ROCm 5.0+
+
+TROUBLESHOOTING:
+================
+
+Problem: "Tesseract not found"
+Solution: Install Tesseract and add to PATH, or configure path in setup dialog
+
+Problem: "GGUF model not found"
+Solution: Download the model and place in models/deepseek-ocr.gguf
+
+Problem: Application falls back to Tesseract
+Solution: This is normal if GGUF model is not available. Install the model for better OCR.
+
+Problem: GPU not detected
+Solution: Install CUDA/ROCm drivers and rebuild llama-cpp-python with GPU support
+
+SUPPORT:
+========
+
+For more information, see README.md
+For issues, visit: https://github.com/takkekatechie/MediaVault
+
+Enjoy using MediaVault Scanner!

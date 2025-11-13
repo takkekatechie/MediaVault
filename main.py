@@ -172,7 +172,8 @@ class MediaVaultApp(ctk.CTk):
         self.scan_btn.grid(row=0, column=3, padx=(0, 20), pady=15)
         
         # Options
-        self.update_existing_var = ctk.BooleanVar(value=False)
+        # MANDATORY DEFAULT: Update existing records should be checked by default (Idempotency)
+        self.update_existing_var = ctk.BooleanVar(value=True)
         self.update_checkbox = ctk.CTkCheckBox(
             controls_frame,
             text="Update existing records",

@@ -262,8 +262,9 @@ class MediaDatabase:
             params = []
 
             if emotion_filter and emotion_filter != "All":
-                query += " AND emotion_sentiment = ?"
-                params.append(emotion_filter)
+                # Use LIKE to match emotion sentiment (handles complex formats like "Positive/Vacation/Daytime")
+                query += " AND emotion_sentiment LIKE ?"
+                params.append(f"{emotion_filter}%")
 
             if person_count_min is not None:
                 query += " AND person_count >= ?"

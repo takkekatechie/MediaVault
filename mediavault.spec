@@ -1,29 +1,31 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller Spec File for MediaVault Scanner (Enhanced VL-OCR Version)
+PyInstaller Spec File for MediaVault Scanner v2.0 (GGUF OCR Version)
 This file defines how to build the Windows executable.
 
-IMPORTANT NOTES FOR VL-OCR DEPLOYMENT:
-======================================
+IMPORTANT NOTES FOR GGUF OCR DEPLOYMENT:
+========================================
 
-1. MODEL WEIGHTS ARE NOT BUNDLED:
-   - Deepseek-VL model weights (~7GB) are too large to bundle
-   - Models will be downloaded on first run to user's cache directory
-   - Default location: C:\\Users\\<Username>\\.cache\\huggingface\\hub\\
+1. GGUF MODEL FILE IS NOT BUNDLED:
+   - Deepseek GGUF model file (~2-7GB) is too large to bundle in executable
+   - Model file must be downloaded separately and placed in models/ folder
+   - Users can use the download script: scripts/download_model.ps1
 
-2. PYTORCH/CUDA DEPENDENCIES:
-   - PyTorch with CUDA support adds ~2-4GB to executable size
-   - Consider distributing without PyTorch and letting users install separately
-   - Users can install with: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+2. LLAMA-CPP-PYTHON DEPENDENCIES:
+   - llama-cpp-python with GPU support should be pre-installed
+   - For NVIDIA CUDA: Build with CMAKE_ARGS="-DLLAMA_CUBLAS=on"
+   - For AMD ROCm/HIP: Build with CMAKE_ARGS="-DLLAMA_HIP=on"
+   - CPU-only version works but is slower
 
 3. FALLBACK MECHANISM:
-   - Application will automatically fall back to Tesseract if Deepseek is unavailable
+   - Application will automatically fall back to Tesseract if GGUF model unavailable
    - Tesseract must still be installed separately by the user
 
 4. RECOMMENDED DEPLOYMENT STRATEGY:
-   - Option A: Bundle everything (large ~3-4GB executable)
-   - Option B: Bundle without PyTorch, provide installation instructions (smaller ~100MB executable)
-   - Option C: Provide Python environment setup script instead of executable
+   - Bundle llama-cpp-python in executable (~100-200MB)
+   - Provide GGUF model download instructions
+   - Include Tesseract installation guide
+   - Users install GPU drivers separately (CUDA/ROCm)
 
 Usage:
     pyinstaller mediavault.spec
@@ -54,19 +56,12 @@ try:
 except:
     pass
 
-# Collect transformers data files (tokenizers, configs, etc.)
+# Collect llama-cpp-python data files (if any)
 try:
-    transformers_datas = collect_data_files('transformers')
-    datas.extend(transformers_datas)
+    llama_cpp_datas = collect_data_files('llama_cpp')
+    datas.extend(llama_cpp_datas)
 except:
-    print("Warning: Could not collect transformers data files")
-
-# Collect sentencepiece data
-try:
-    sentencepiece_datas = collect_data_files('sentencepiece')
-    datas.extend(sentencepiece_datas)
-except:
-    print("Warning: Could not collect sentencepiece data files")
+    print("Warning: Could not collect llama-cpp-python data files")
 
 # Hidden imports that PyInstaller might miss
 hiddenimports = [
@@ -78,29 +73,23 @@ hiddenimports = [
     'numpy',
     'sqlite3',
 
-    # VL-OCR dependencies (optional - will gracefully fail if not installed)
-    'torch',
-    'torchvision',
-    'transformers',
-    'accelerate',
-    'sentencepiece',
-    'protobuf',
+    # GGUF OCR dependencies
+    'llama_cpp',
+    'llama_cpp.llama_cpp',
 
-    # Transformers submodules
-    'transformers.models',
-    'transformers.models.auto',
-    'transformers.tokenization_utils',
-    'transformers.tokenization_utils_base',
+    # Optional GPU support libraries
+    'ctypes',
+    'ctypes.util',
 ]
 
 # Collect all submodules
 hiddenimports.extend(collect_submodules('customtkinter'))
 
-# Try to collect transformers submodules (optional)
+# Try to collect llama-cpp-python submodules (optional)
 try:
-    hiddenimports.extend(collect_submodules('transformers'))
+    hiddenimports.extend(collect_submodules('llama_cpp'))
 except:
-    print("Warning: Could not collect transformers submodules")
+    print("Warning: Could not collect llama-cpp-python submodules")
 
 a = Analysis(
     ['main.py'],
@@ -122,10 +111,7 @@ a = Analysis(
         'jupyter',
         'notebook',
 
-        # Exclude PyTorch for lightweight build
-        # Users can install separately if they want Deepseek-VL support:
-        # pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-        # pip install transformers accelerate sentencepiece protobuf
+        # Exclude old VL-OCR dependencies (not needed for GGUF version)
         'torch',
         'torchvision',
         'transformers',
