@@ -1,0 +1,25 @@
+# MediaVault Scanner - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# GUI Framework
+customtkinter>=5.2.0
+
+# Image Processing & EXIF
+Pillow>=10.0.0
+exifread>=3.0.0
+
+# OCR
+pytesseract>=0.3.10
+
+# Computer Vision (Face Detection)
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# Video Processing
+opencv-python>=4.8.0
+
+# Database (built-in sqlite3, no install needed)
+
+# Packaging
+pyinstaller>=6.0.0
+

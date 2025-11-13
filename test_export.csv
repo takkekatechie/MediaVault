@@ -1,0 +1,2 @@
+id,filepath,filename,file_type,date_time_original,gps_latitude,gps_longitude,person_count,ocr_text_summary,object_keywords,emotion_sentiment
+1,C:\test\sample.jpg,sample.jpg,Image,2025:01:15 12:30:45,37.7749,-122.4194,3,Sample text from image,"sample, test, image",Positive/Vacation

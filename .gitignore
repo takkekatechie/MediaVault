@@ -1,0 +1,62 @@
+# MediaVault Scanner - Git Ignore File
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# PyInstaller
+*.manifest
+*.spec.bak
+
+# Database
+metadata.db
+metadata.db-journal
+*.sqlite
+*.sqlite3
+
+# Configuration
+mediavault_config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Test files
+test_images/
+test_videos/
+sample_media/
+
