@@ -536,3 +536,33 @@ For issues, questions, or suggestions, please open an issue on GitHub.
 ---
 
 **MediaVault Scanner** - Your local media metadata repository solution.
+##  Model Weights & Large Files
+
+- **Note:** Large model weights and generated deployment artifacts are intentionally not included in this repository to avoid exceeding GitHub size limits. The primary model used by MediaVault, models/deepseek-ocr.gguf, is expected to be downloaded separately and stored in the models/ folder.
+
+- To simplify first-run setup, a helper PowerShell script is provided at scripts/download_model.ps1 which downloads the model from a hosted URL and optionally verifies its SHA256 checksum.
+
+- If you maintain the model file in another storage location (S3, Google Drive, or GitHub Releases), host the direct download link there and pass it to the script below.
+
+### Quick usage (PowerShell)
+
+1. Create the models folder (if it doesn't exist):
+
+`powershell
+mkdir models -ErrorAction SilentlyContinue
+`
+
+2. Run the download helper (replace <MODEL_URL> and optional <SHA256>):
+
+`powershell
+.\scripts\download_model.ps1 -Url "<MODEL_URL>" -OutPath "models\\deepseek-ocr.gguf" -Sha256 "<optional-sha256>"
+`
+
+3. Confirm the file exists at models\\deepseek-ocr.gguf before launching the app.
+
+If you want the project to host the model in-repo, consider using Git LFS or GitHub Releases; otherwise keep the model external and use this script during setup.
+
+### Removing Large Files From Git History
+
+If large files were committed earlier and you need them removed from the repository history, see scripts/remove_large_history.md for safe, step-by-step instructions using git-filter-repo or the BFG Repo-Cleaner. Rewriting history is destructive for shared branches  read that document carefully and notify collaborators before proceeding.
+
