@@ -1,6 +1,6 @@
 # MediaVault Scanner v2.0
 
-**A Professional-Grade Local Photo/Video Metadata Repository with Enhanced GGUF OCR**
+**An Enthusiast project - Local Photo/Video Metadata Repository with Enhanced GGUF OCR**
 
 MediaVault Scanner is a complete, self-contained Python desktop application designed to recursively scan local directories for image and video files, extract comprehensive metadata (including EXIF data, GPS coordinates, face detection, **advanced GGUF OCR text extraction**, and emotion heuristics), and persist this information into a structured SQLite database.
 
@@ -14,7 +14,7 @@ MediaVault Scanner is a complete, self-contained Python desktop application desi
 - **Dual OCR Engine System**:
   - **Primary**: Deepseek GGUF (quantized) model via llama-cpp-python for superior text extraction accuracy
   - **Fallback**: Tesseract OCR for lightweight, reliable text extraction
-  - **Intelligent Fallback**: Automatically switches to Tesseract if Deepseek GGUF unavailable
+  - **Intelligent Fallback**: Automatically switches to Tesseract if Deepseek GGUF is not available
 - **Cross-GPU Acceleration**: Supports both NVIDIA CUDA and AMD ROCm/HIP for high-performance OCR processing
 - **On-Screen Setup Guide**: Comprehensive model setup dialog with step-by-step instructions
 - **Flexible Configuration**: Custom GGUF model paths and Tesseract paths
@@ -149,7 +149,7 @@ MediaVault Scanner is a complete, self-contained Python desktop application desi
    pip install -r requirements.txt
    ```
 
-   **Note**: This will install all dependencies including PyTorch and transformers. For CUDA support, see the PyTorch installation section below.
+   **Note**: This will install all dependencies, including PyTorch and transformers. For CUDA support, see the PyTorch installation section below.
 
 4. **Install Tesseract OCR** (see detailed instructions below)
 
