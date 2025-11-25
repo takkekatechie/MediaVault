@@ -13,7 +13,7 @@ class Config:
     
     # Application metadata
     APP_NAME = "MediaVault Scanner"
-    APP_VERSION = "2.0.0"  # GGUF/llama-cpp-python Version
+    APP_VERSION = "2.1.0"  # RAW Support & Library Sorting
 
     # Database settings
     DEFAULT_DB_PATH = "metadata.db"

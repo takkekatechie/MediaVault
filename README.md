@@ -1,16 +1,24 @@
-# MediaVault Scanner v2.0
+# MediaVault Scanner v2.1
 
 **An Enthusiast project - Local Photo/Video Metadata Repository with Enhanced GGUF OCR**
 
 MediaVault Scanner is a complete, self-contained Python desktop application designed to recursively scan local directories for image and video files, extract comprehensive metadata (including EXIF data, GPS coordinates, face detection, **advanced GGUF OCR text extraction**, and emotion heuristics), and persist this information into a structured SQLite database.
 
-**🆕 NEW in v2.0**: **GGUF OCR** powered by Deepseek GGUF model via llama-cpp-python for high-performance text extraction with cross-GPU support (NVIDIA CUDA & AMD ROCm/HIP) and intelligent Tesseract fallback!
+**🆕 NEW in v2.1**: **RAW File Support** for professional photography workflows and **Library Sorting** to easily organize and find your media! Plus the powerful **GGUF OCR** from v2.0.
 
 ---
 
 ## 🎯 Features
 
-### 🆕 Enhanced GGUF OCR (v2.0)
+### 🆕 RAW Support & Library Sorting (v2.1)
+- **RAW Image Support**: Native support for professional RAW formats including `.arw`, `.cr2`, `.nef`, `.dng`, `.orf`, `.rw2`, `.sr2`, and `.raf`.
+- **Advanced Library Sorting**:
+  - Sort by **Date** (Newest/Oldest)
+  - Sort by **Filename** (A-Z/Z-A)
+  - Sort by **Person Count** (High-Low)
+  - Sort by **Emotion** (Sentiment grouping)
+
+### 🚀 Enhanced GGUF OCR (v2.0)
 - **Dual OCR Engine System**:
   - **Primary**: Deepseek GGUF (quantized) model via llama-cpp-python for superior text extraction accuracy
   - **Fallback**: Tesseract OCR for lightweight, reliable text extraction
@@ -63,6 +71,7 @@ MediaVault Scanner is a complete, self-contained Python desktop application desi
 ## 📋 Supported File Formats
 
 - **Images**: `.jpg`, `.jpeg`, `.png`, `.heic`
+- **RAW Images**: `.arw`, `.cr2`, `.nef`, `.dng`, `.orf`, `.rw2`, `.sr2`, `.raf`
 - **Videos**: `.mp4`, `.mov`, `.avi`
 
 ---
