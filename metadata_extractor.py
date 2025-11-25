@@ -25,7 +25,7 @@ class MetadataExtractor:
     """Extracts comprehensive metadata from media files."""
 
     # Supported file extensions
-    IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic'}
+    IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic', '.arw', '.cr2', '.nef', '.dng', '.orf', '.rw2', '.sr2', '.raf'}
     VIDEO_EXTENSIONS = {'.mp4', '.mov', '.avi'}
 
     # Sentiment keywords for heuristic analysis
@@ -176,7 +176,7 @@ class MetadataExtractor:
                             metadata['gps_latitude'] = gps_lat
                             metadata['gps_longitude'] = gps_lon
         except Exception as e:
-            # Fallback to exifread
+            # Fallback to exifread (better for RAW files)
             try:
                 with open(filepath, 'rb') as f:
                     tags = exifread.process_file(f)
@@ -242,7 +242,20 @@ class MetadataExtractor:
     def _detect_faces_image(self, filepath: str) -> int:
         """Detect faces in an image file."""
         try:
-            img = cv2.imread(filepath)
+            # For RAW files, we might not be able to open with cv2 directly
+            # Try to open with PIL first and convert
+            try:
+                pil_img = Image.open(filepath)
+                # Convert to RGB if needed
+                if pil_img.mode != 'RGB':
+                    pil_img = pil_img.convert('RGB')
+                img = np.array(pil_img)
+                # Convert RGB to BGR for OpenCV
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            except Exception:
+                # Fallback to direct cv2 load (works for standard formats)
+                img = cv2.imread(filepath)
+            
             if img is None:
                 return 0
             return self._detect_faces_frame(img)
@@ -290,6 +303,9 @@ class MetadataExtractor:
         """
         try:
             # Use GGUF OCR engine (will try Deepseek GGUF first, then Tesseract)
+            # Note: GGUF OCR handles image loading internally, but for RAW files
+            # we might need to pre-convert if it fails.
+            # For now, relying on GGUF_OCR's internal handling or PIL support.
             return self.gguf_ocr.extract_text(filepath, max_length=100)
         except Exception as e:
             print(f"OCR extraction failed for {filepath}: {e}")
@@ -325,8 +341,16 @@ class MetadataExtractor:
         It identifies common scenes (sky, grass, water, etc.) based on dominant colors.
         """
         try:
-            # Read image with OpenCV
-            img = cv2.imread(filepath)
+            # Read image
+            try:
+                pil_img = Image.open(filepath)
+                if pil_img.mode != 'RGB':
+                    pil_img = pil_img.convert('RGB')
+                img = np.array(pil_img)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            except Exception:
+                img = cv2.imread(filepath)
+
             if img is None:
                 return ''
 
@@ -529,24 +553,32 @@ class MetadataExtractor:
 
             if file_type == 'Image':
                 # Generate thumbnail from image
-                with Image.open(filepath) as img:
-                    # Convert to RGB if necessary (for PNG with transparency, etc.)
-                    if img.mode != 'RGB':
-                        img = img.convert('RGB')
+                try:
+                    with Image.open(filepath) as img:
+                        # Convert to RGB if necessary (for PNG with transparency, etc.)
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
 
-                    # Create thumbnail with exact size (crop to square if needed)
-                    # First, resize maintaining aspect ratio
-                    img.thumbnail((128, 128), Image.Resampling.LANCZOS)
+                        # Create thumbnail with exact size (crop to square if needed)
+                        # First, resize maintaining aspect ratio
+                        img.thumbnail((128, 128), Image.Resampling.LANCZOS)
 
-                    # Create a square thumbnail by cropping/padding
-                    thumb = Image.new('RGB', self.THUMBNAIL_SIZE, (0, 0, 0))
+                        # Create a square thumbnail by cropping/padding
+                        thumb = Image.new('RGB', self.THUMBNAIL_SIZE, (0, 0, 0))
 
-                    # Calculate position to paste (center the image)
-                    paste_x = (self.THUMBNAIL_SIZE[0] - img.width) // 2
-                    paste_y = (self.THUMBNAIL_SIZE[1] - img.height) // 2
+                        # Calculate position to paste (center the image)
+                        paste_x = (self.THUMBNAIL_SIZE[0] - img.width) // 2
+                        paste_y = (self.THUMBNAIL_SIZE[1] - img.height) // 2
 
-                    thumb.paste(img, (paste_x, paste_y))
-                    thumb.save(thumbnail_path, 'JPEG', quality=85)
+                        thumb.paste(img, (paste_x, paste_y))
+                        thumb.save(thumbnail_path, 'JPEG', quality=85)
+                except Exception as e:
+                    # Fallback for RAW files or other issues: try to extract embedded thumbnail via exifread
+                    # Note: exifread doesn't easily export the thumbnail data directly in a way PIL likes without some work,
+                    # but we can try a basic placeholder if PIL fails.
+                    # For now, just return None if PIL fails, or we could use a generic icon.
+                    print(f"Thumbnail generation failed for {filepath}: {e}")
+                    return None
 
             elif file_type == 'Video':
                 # Generate thumbnail from video frame at 5 seconds

@@ -242,7 +242,9 @@ class MediaDatabase:
                              emotion_filter: Optional[str] = None,
                              person_count_min: Optional[int] = None,
                              person_count_max: Optional[int] = None,
-                             keyword_search: Optional[str] = None) -> List[Dict[str, Any]]:
+                             keyword_search: Optional[str] = None,
+                             sort_by: str = 'date_time_original',
+                             sort_order: str = 'DESC') -> List[Dict[str, Any]]:
         """
         Get filtered metadata records.
 
@@ -251,6 +253,8 @@ class MediaDatabase:
             person_count_min: Minimum person count
             person_count_max: Maximum person count
             keyword_search: Search in object keywords
+            sort_by: Column to sort by (default: date_time_original)
+            sort_order: Sort order 'ASC' or 'DESC' (default: DESC)
 
         Returns:
             List of filtered metadata records
@@ -278,7 +282,18 @@ class MediaDatabase:
                 query += " AND object_keywords LIKE ?"
                 params.append(f"%{keyword_search}%")
 
-            query += " ORDER BY id DESC"
+            # Validate sort_by to prevent SQL injection
+            valid_sort_columns = {
+                'date_time_original', 'filename', 'person_count', 'emotion_sentiment', 'id'
+            }
+            if sort_by not in valid_sort_columns:
+                sort_by = 'date_time_original'
+            
+            # Validate sort_order
+            if sort_order.upper() not in ('ASC', 'DESC'):
+                sort_order = 'DESC'
+
+            query += f" ORDER BY {sort_by} {sort_order}"
 
             cursor.execute(query, params)
             rows = cursor.fetchall()

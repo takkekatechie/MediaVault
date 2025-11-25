@@ -506,7 +506,7 @@ class MediaVaultApp(ctk.CTk):
         """Build the filter controls."""
         filter_frame = ctk.CTkFrame(parent, fg_color="transparent")
         filter_frame.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
-        filter_frame.grid_columnconfigure((0, 1, 2), weight=1)
+        filter_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
         # Emotion filter
         emotion_label = ctk.CTkLabel(
@@ -560,6 +560,30 @@ class MediaVaultApp(ctk.CTk):
         )
         self.keyword_search.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
 
+        # Sort By
+        sort_label = ctk.CTkLabel(
+            filter_frame,
+            text="Sort By:",
+            font=ctk.CTkFont(size=12, weight="bold")
+        )
+        sort_label.grid(row=0, column=3, padx=5, pady=5, sticky="w")
+
+        self.sort_combobox = ctk.CTkComboBox(
+            filter_frame,
+            values=[
+                "Date (Newest)", 
+                "Date (Oldest)", 
+                "Filename (A-Z)", 
+                "Filename (Z-A)", 
+                "Person Count (High-Low)", 
+                "Emotion"
+            ],
+            command=self._apply_filters,
+            width=150
+        )
+        self.sort_combobox.set("Date (Newest)")
+        self.sort_combobox.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
+
         # Apply button
         apply_btn = ctk.CTkButton(
             filter_frame,
@@ -569,7 +593,7 @@ class MediaVaultApp(ctk.CTk):
             height=32,
             font=ctk.CTkFont(size=12, weight="bold")
         )
-        apply_btn.grid(row=2, column=0, columnspan=3, pady=10)
+        apply_btn.grid(row=2, column=0, columnspan=4, pady=10)
 
     def _create_filtered_table_header(self):
         """Create the filtered data table header."""
@@ -687,13 +711,39 @@ class MediaVaultApp(ctk.CTk):
 
         keyword = self.keyword_search.get().strip()
 
+        # Get sort option
+        sort_selection = self.sort_combobox.get()
+        sort_by = 'date_time_original'
+        sort_order = 'DESC'
+
+        if sort_selection == "Date (Newest)":
+            sort_by = 'date_time_original'
+            sort_order = 'DESC'
+        elif sort_selection == "Date (Oldest)":
+            sort_by = 'date_time_original'
+            sort_order = 'ASC'
+        elif sort_selection == "Filename (A-Z)":
+            sort_by = 'filename'
+            sort_order = 'ASC'
+        elif sort_selection == "Filename (Z-A)":
+            sort_by = 'filename'
+            sort_order = 'DESC'
+        elif sort_selection == "Person Count (High-Low)":
+            sort_by = 'person_count'
+            sort_order = 'DESC'
+        elif sort_selection == "Emotion":
+            sort_by = 'emotion_sentiment'
+            sort_order = 'ASC'
+
         # Get filtered data
         db = self.scanner.get_database()
         self.current_filtered_data = db.get_filtered_metadata(
             emotion_filter=emotion if emotion != "All" else None,
             person_count_min=person_min,
             person_count_max=person_max,
-            keyword_search=keyword if keyword else None
+            keyword_search=keyword if keyword else None,
+            sort_by=sort_by,
+            sort_order=sort_order
         )
 
         # Clear existing data rows (keep header)
